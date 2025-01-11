@@ -89,8 +89,9 @@ kustomize-deps reads kustomization.yaml in the same way as kustomize, but instea
 of generating resource manifests, it simply collects paths to the inputs. And then
 generates a depfile like this:
 
-  build/deploy-local.stamp: build/deploy-local/kustomization.yaml deployment/local/kustomization.yaml deployment/local/config.env deployment/local/namespace.yaml deployment/local/secret.env deployment/base/kustomization.yaml deployment/base/ingress.yaml deployment/base/service.yaml deployment/base/deployment.yaml
-  build/deploy-local.stamp.d: build/deploy-local/kustomization.yaml deployment/local/kustomization.yaml deployment/local/config.env deployment/local/namespace.yaml deployment/local/secret.env deployment/base/kustomization.yaml deployment/base/ingress.yaml deployment/base/service.yaml deployment/base/deployment.yaml
+```make
+build/deploy-local.stamp: build/deploy-local/kustomization.yaml deployment/local/kustomization.yaml deployment/local/config.env deployment/local/namespace.yaml deployment/local/secret.env deployment/base/kustomization.yaml deployment/base/ingress.yaml deployment/base/service.yaml deployment/base/deployment.yaml
+```
 
 Which is included into your makefile:
 
