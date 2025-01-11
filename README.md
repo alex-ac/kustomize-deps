@@ -1,5 +1,7 @@
 # kustomize-deps
 
+[![Go](https://github.com/alex-ac/kustomize-deps/actions/workflows/go.yml/badge.svg)](https://github.com/alex-ac/kustomize-deps/actions/workflows/go.yml)
+
 Generate make-compatible depfile with all files used by kustomize deployment.
 
 When using Makefile to orchestrate calls of deployment with kustomize, it's very
