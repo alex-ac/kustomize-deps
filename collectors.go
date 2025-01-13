@@ -37,12 +37,12 @@ func NewErrMissingKustomization(path string) error {
 	return errors.New(text.String())
 }
 
-func LoadKustFile(path string) (content []byte, kustFileName string, err error) {
+func LoadKustFile(fsys fs.FS, path string) (content []byte, kustFileName string, err error) {
 	match := 0
 	for _, kf := range RecognizedKustomizationFileName {
 		var c []byte
 		kf := filepath.Join(path, kf)
-		c, err = os.ReadFile(kf)
+		c, err = fs.ReadFile(fsys, kf)
 		if c != nil {
 			match += 1
 			content = c
@@ -65,8 +65,8 @@ func LoadKustFile(path string) (content []byte, kustFileName string, err error) 
 	return
 }
 
-func LoadKustTarget(path string) (string, *types.Kustomization, error) {
-	content, kustFileName, err := LoadKustFile(path)
+func LoadKustTarget(fsys fs.FS, path string) (string, *types.Kustomization, error) {
+	content, kustFileName, err := LoadKustFile(fsys, path)
 	if err != nil {
 		return "", nil, err
 	}
@@ -88,8 +88,8 @@ const (
 	RemoteResource
 )
 
-func GetResourceType(path string) (ResourceType, error) {
-	switch info, err := os.Stat(path); {
+func GetResourceType(fsys fs.FS, path string) (ResourceType, error) {
+	switch info, err := fs.Stat(fsys, path); {
 	case err == nil && info.IsDir():
 		return DirResource, nil
 	case err == nil && !info.IsDir():
@@ -101,10 +101,10 @@ func GetResourceType(path string) (ResourceType, error) {
 	}
 }
 
-func CollectGeneratorDeps(a *DepsAccumulator, root string, args types.GeneratorArgs) error {
+func CollectGeneratorDeps(a *DepsAccumulator, fsys fs.FS, root string, args types.GeneratorArgs) error {
 	for _, path := range args.FileSources {
 		resolvedPath := filepath.Clean(filepath.Join(root, path))
-		resourceType, err := GetResourceType(resolvedPath)
+		resourceType, err := GetResourceType(fsys, resolvedPath)
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func CollectGeneratorDeps(a *DepsAccumulator, root string, args types.GeneratorA
 
 	for _, path := range args.EnvSources {
 		resolvedPath := filepath.Clean(filepath.Join(root, path))
-		resourceType, err := GetResourceType(resolvedPath)
+		resourceType, err := GetResourceType(fsys, resolvedPath)
 		if err != nil {
 			return err
 		}
@@ -146,8 +146,8 @@ func CollectChart(a *DepsAccumulator, helmHome, name string) error {
 	})
 }
 
-func CollectKustomizationDeps(a *DepsAccumulator, root string) error {
-	path, k, err := LoadKustTarget(root)
+func CollectKustomizationDeps(a *DepsAccumulator, fsys fs.FS, root string) error {
+	path, k, err := LoadKustTarget(fsys, root)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func CollectKustomizationDeps(a *DepsAccumulator, root string) error {
 
 	for _, path := range k.Resources {
 		resolvedPath := filepath.Clean(filepath.Join(root, path))
-		resourceType, err := GetResourceType(resolvedPath)
+		resourceType, err := GetResourceType(fsys, resolvedPath)
 		if err != nil {
 			return err
 		}
@@ -168,7 +168,7 @@ func CollectKustomizationDeps(a *DepsAccumulator, root string) error {
 		case FileResource:
 			a.AddDep(resolvedPath)
 		case DirResource:
-			if err := CollectKustomizationDeps(a, resolvedPath); err != nil {
+			if err := CollectKustomizationDeps(a, fsys, resolvedPath); err != nil {
 				return err
 			}
 		case RemoteResource:
@@ -182,7 +182,7 @@ func CollectKustomizationDeps(a *DepsAccumulator, root string) error {
 
 	for _, path := range k.Crds {
 		resolvedPath := filepath.Clean(filepath.Join(root, path))
-		resourceType, err := GetResourceType(resolvedPath)
+		resourceType, err := GetResourceType(fsys, resolvedPath)
 		if err != nil {
 			return err
 		}
@@ -195,14 +195,21 @@ func CollectKustomizationDeps(a *DepsAccumulator, root string) error {
 	}
 
 	for _, configMapArgs := range k.ConfigMapGenerator {
-		if err := CollectGeneratorDeps(a, root, configMapArgs.GeneratorArgs); err != nil {
+		if err := CollectGeneratorDeps(a, fsys, root, configMapArgs.GeneratorArgs); err != nil {
 			return err
 		}
 	}
 
 	for _, secretArgs := range k.SecretGenerator {
-		if err := CollectGeneratorDeps(a, root, secretArgs.GeneratorArgs); err != nil {
+		if err := CollectGeneratorDeps(a, fsys, root, secretArgs.GeneratorArgs); err != nil {
 			return err
+		}
+	}
+
+	for _, patch := range k.Patches {
+		if patch.Path != "" {
+			resolvedPath := filepath.Clean(filepath.Join(root, patch.Path))
+			a.AddDep(resolvedPath)
 		}
 	}
 

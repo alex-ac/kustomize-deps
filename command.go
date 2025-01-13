@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -114,14 +114,14 @@ On the second run it is recommended to use --keep-mtime flag to prevent
 dependency cycle.
 `
 
-func MakeCommand() (cmd *cobra.Command) {
+func MakeCommand(fsys fs.FS) (cmd *cobra.Command) {
 	args := &Arguments{}
 	cmd = &cobra.Command{
 		Use:     "kustomize-deps -i dir -o deployment.stamp.d -t deployment.stamp",
 		Short:   "Generate make-compatible depfile with all files used by kustomize deployment",
 		Long:    Docs,
 		PreRunE: func(*cobra.Command, []string) error { return ValidateArguments(args) },
-		RunE:    func(*cobra.Command, []string) error { return Run(*args) },
+		RunE:    func(*cobra.Command, []string) error { return Run(fsys, *args) },
 	}
 	cmd.Flags().StringVarP(&args.Input, "input", "i", "", "Path to the kustomization.")
 	cmd.Flags().StringVarP(&args.Output, "output", "o", "", "Output file name.")
@@ -146,25 +146,14 @@ func ValidateArguments(args *Arguments) error {
 	return nil
 }
 
-func Run(args Arguments) error {
-	var err error
-	args.Output, err = filepath.Abs(args.Output)
-	if err != nil {
-		return err
-	}
-	args.Input, err = filepath.Abs(args.Input)
-	if err != nil {
-		return err
-	}
-
+func Run(fsys fs.FS, args Arguments) error {
 	a := NewDepsAccumulator()
-	if err := CollectKustomizationDeps(&a, args.Input); err != nil {
+	if err := CollectKustomizationDeps(&a, fsys, args.Input); err != nil {
 		return err
 	}
 
-	data := MarshalToDepFile(args.Input, args.Target, a)
-	var oldData []byte
-	oldData, err = os.ReadFile(args.Output)
+	data := MarshalToDepFile(".", args.Target, a)
+	oldData, err := os.ReadFile(args.Output)
 	switch {
 	case err == nil:
 	case errors.Is(err, os.ErrNotExist):

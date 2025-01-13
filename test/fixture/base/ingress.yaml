@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Ingress
+metadata:
+  name: service
+  labels:
+    app.kubernetes.io/name: service
+    app.kubernetes.io/component: l7-balancer
+spec:
+  defaultBackend:
+    service:
+      name: service
+      port:
+        number: 80

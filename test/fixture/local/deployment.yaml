@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service
+spec:
+  template:
+    spec:
+      containers:
+      - name: service
+        envFrom:
+        - secretRef:
+            name: service
+        - configMapRef:
+            name: service
+      volumeMounts:
+      - mountPath: /var/service/cert
+        name: cert
+        readOnly: true
+      volumes:
+      - name: cert
+        secret:
+          secretName: cert

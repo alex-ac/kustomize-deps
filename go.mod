@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/spf13/cobra v1.8.0
+	github.com/stretchr/testify v1.9.0
 	sigs.k8s.io/kustomize/api v0.18.0
 )
 
@@ -18,6 +19,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect

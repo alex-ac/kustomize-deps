@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	if err := kdeps.MakeCommand().Execute(); err != nil {
+	if err := kdeps.MakeCommand(os.DirFS("/")).Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		os.Exit(1)
 	}
