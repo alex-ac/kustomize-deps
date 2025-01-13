@@ -70,6 +70,7 @@ deploy-local: build/deploy-local.stamp
 build/deploy-local.stamp: build/deploy-local/kustomization.yaml
 	kustomize build deployment/local | kubectl apply -f - --server-side --prune -l app.kubernetes.io/managed-by=kustomize-local
 	go run github.com/alex-ac/kustomize-deps/cmd/kustomize-deps -o $@.d -i $(dir $<) -t $@
+    touch $@
 
 -include build/deploy-local.stamp.d
 
